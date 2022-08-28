@@ -112,7 +112,7 @@ class ENS160:
                             'Resistances' : [None, None, None, None]}
         # Initialize with 'room temperature & humidity'
         self.temperature_compensation = 25
-        self.ens.humidity_compensation = 50
+        self.humidity_compensation = 50
 
     def reset(self):
         """Perform a soft reset command"""

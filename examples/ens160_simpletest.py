@@ -18,17 +18,6 @@ ens.humidity_compensation = 50
 
 
 while True:
-    # Check status
-    status = ens.data_validity
-    if status == adafruit_ens160.NORMAL_OP:
-        print("Normal operation")
-    if status == adafruit_ens160.WARM_UP:
-        print("Warming up")
-    if status == adafruit_ens160.START_UP:
-        print("Initial startup")
-    if status == adafruit_ens160.INVALID_OUT:
-        print("Invalid output")
-
     print("AQI (1-5):", ens.AQI)
     print("TVOC (ppb):", ens.TVOC)
     print("eCO2 (ppm):", ens.eCO2)
