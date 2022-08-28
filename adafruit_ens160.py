@@ -32,10 +32,11 @@ Implementation Notes
 """
 
 import time
+import struct
 from micropython import const
 from adafruit_bus_device import i2c_device
 from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
-from adafruit_register.i2c_bit import ROBit
+from adafruit_register.i2c_bit import RWBit, ROBit
 from adafruit_register.i2c_bits import ROBits
 
 __version__ = "0.0.0+auto.0"
@@ -46,24 +47,30 @@ ENS160_I2CADDR_DEFAULT: int = const(0x53)  # Default I2C address
 
 _ENS160_REG_PARTID = const(0x00)
 _ENS160_REG_OPMODE = const(0x10)
-
+_ENS160_REG_CONFIG = const(0x11)
+_ENS160_REG_COMMAND = const(0x12)
 _ENS160_REG_TEMPIN = const(0x13)
 _ENS160_REG_RHIN = const(0x15)
-
 _ENS160_REG_STATUS = const(0x20)
 _ENS160_REG_AQI = const(0x21)
 _ENS160_REG_TVOC = const(0x22)
 _ENS160_REG_ECO2 = const(0x24)
-                         
+_ENS160_REG_GPRREAD = const(0x48)
+
 MODE_SLEEP = 0x00
 MODE_IDLE = 0x01
 MODE_STANDARD = 0x02
-_valid_modes = (MODE_SLEEP, MODE_IDLE, MODE_STANDARD)
+MODE_RESET = 0xF0
+_valid_modes = (MODE_SLEEP, MODE_IDLE, MODE_STANDARD, MODE_RESET)
 
 NORMAL_OP = 0x00
 WARM_UP = 0x01
 START_UP = 0x02
 INVALID_OUT = 0x03
+
+COMMAND_NOP = 0x00
+COMMAND_CLRGPR = 0xCC
+COMMAND_GETAPPVER = 0x0E
 
 class ENS160:
     """Driver for the ENS160 air quality sensor
@@ -75,22 +82,100 @@ class ENS160:
     _mode = UnaryStruct(_ENS160_REG_OPMODE, "<B")
     _temp_in = UnaryStruct(_ENS160_REG_TEMPIN, "<H")
     _rh_in = UnaryStruct(_ENS160_REG_RHIN, "<H")
+    _status = UnaryStruct(_ENS160_REG_STATUS, "<B")
 
-    new_data_available = ROBit(_ENS160_REG_STATUS, 1)
+    # sensor data registers
+    command = UnaryStruct(_ENS160_REG_COMMAND, "<B")
+    _new_GPR_available = ROBit(_ENS160_REG_STATUS, 0)
+    _new_data_available = ROBit(_ENS160_REG_STATUS, 1)
     data_validity = ROBits(2, _ENS160_REG_STATUS, 2)
     AQI = ROBits(2, _ENS160_REG_AQI, 0)
     TVOC = ROUnaryStruct(_ENS160_REG_TVOC, "<H")
     eCO2 = ROUnaryStruct(_ENS160_REG_ECO2, "<H")
-    
+
+    # interrupt register bits
+    interrupt_polarity = RWBit(_ENS160_REG_CONFIG, 6)
+    interrupt_pushpull = RWBit(_ENS160_REG_CONFIG, 5)
+    interrupt_on_GPR = RWBit(_ENS160_REG_CONFIG, 3)
+    interrupt_on_data = RWBit(_ENS160_REG_CONFIG, 1)
+    interrupt_enable = RWBit(_ENS160_REG_CONFIG, 0)
+
     def __init__(self, i2c_bus, address=ENS160_I2CADDR_DEFAULT):
         # pylint: disable=no-member
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
 
+        self.reset()
+
         if self.part_id != 0x160:
             raise RuntimeError("Unable to find ENS160, check your wiring")
-
+        self.mode = MODE_IDLE
+        self.clear_command()
         self.mode = MODE_STANDARD
+        self._buf = bytearray(8)
+        # Buffered readings for when we read all at once
+        self._bufferdict = {'AQI': None, 'TVOC': None, 'eCO2' : None,
+                            'Resistances' : [None, None, None, None]}
+        # Initialize with 'room temperature & humidity'
+        self.temperature_compensation = 25
+        self.ens.humidity_compensation = 50
 
+    def reset(self):
+        """Perform a soft reset command"""
+        self.mode = MODE_RESET
+        time.sleep(0.01)
+
+    def clear_command(self):
+        """Clears out custom data"""
+        self.command = COMMAND_NOP
+        self.command = COMMAND_CLRGPR
+        time.sleep(0.01)
+
+    def _read_GPR(self):
+        """Read 8 bytes of general purpose registers into self._buf"""
+        self._buf[0] = _ENS160_REG_GPRREAD
+        with self.i2c_device as i2c:
+            i2c.write_then_readinto(self._buf, self._buf, out_end=1)
+
+    @property
+    def new_data_available(self):
+        """This function is wierd, it checks if there's new data or
+        GPR (resistances) and if so immediately reads it into the
+        internal buffer... otherwise the status is lost!"""
+        # we'll track if we actually read new data!
+        newdat = False
+        
+        if self._new_data_available:
+            self._buf[0] = _ENS160_REG_AQI
+            with self.i2c_device as i2c:
+                i2c.write_then_readinto(self._buf, self._buf,
+                                        out_end=1, in_end=5)
+            self._bufferdict['AQI'], self._bufferdict['TVOC'], self._bufferdict['eCO2'], _, _, _ = struct.unpack("<BHHBBB", self._buf)
+            newdat = True
+
+        if self._new_GPR_available:
+            self._read_GPR()
+            for i,x in enumerate(struct.unpack("<HHHH", self._buf)):
+                self._bufferdict['Resistances'][i] = int(pow(2, x / 2048.0))
+            newdat = True
+
+        return newdat
+        
+    def read_all_sensors(self):
+        # return the currently buffered deets
+        return self._bufferdict
+            
+    @property
+    def firmware_version(self):
+        """Read the semver firmware version from the general registers"""
+        curr_mode = self.mode
+        self.mode = MODE_IDLE
+        self.clear_command()
+        time.sleep(0.01)
+        self.command = COMMAND_GETAPPVER
+        self._read_GPR()
+        self.mode = curr_mode
+        return '%d.%d.%d' % (self._buf[4], self._buf[5], self._buf[6])
+         
     @property
     def mode(self):
         """Operational Mode, can be MODE_SLEEP, MODE_IDLE, or MODE_STANDARD"""

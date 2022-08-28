@@ -8,32 +8,17 @@ import adafruit_ens160
 
 i2c = board.I2C()  # uses board.SCL and board.SDA
 
-from adafruit_debug_i2c import DebugI2C
-debug_i2c = DebugI2C(i2c)
-
-ens = adafruit_ens160.ENS160(debug_i2c)
-
-ens.mode = adafruit_ens160.MODE_STANDARD
-curr_mode = ens.mode
-print("Current mode: ", end='')
-if curr_mode == adafruit_ens160.MODE_SLEEP:
-    print("Sleeping")
-if curr_mode == adafruit_ens160.MODE_IDLE:
-    print("Idle")
-if curr_mode == adafruit_ens160.MODE_STANDARD:
-    print("Standard sensing")
+ens = adafruit_ens160.ENS160(i2c)
 
 # Set the temperature compensation variable to the ambient temp
 # for best sensor calibration
 ens.temperature_compensation = 25
-print("Current temperature compensation = %0.1f *C" % ens.temperature_compensation)
 # Same for ambient relative humidity
 ens.humidity_compensation = 50
-print("Current rel humidity compensation = %0.1f %%" % ens.humidity_compensation)
+
 
 while True:
-    #print("data ready?", ens.new_data_available)
-
+    # Check status
     status = ens.data_validity
     if status == adafruit_ens160.NORMAL_OP:
         print("Normal operation")
@@ -43,8 +28,11 @@ while True:
         print("Initial startup")
     if status == adafruit_ens160.INVALID_OUT:
         print("Invalid output")
-    time.sleep(1)
 
     print("AQI (1-5):", ens.AQI)
     print("TVOC (ppb):", ens.TVOC)
     print("eCO2 (ppm):", ens.eCO2)
+    print()
+    
+    # new data shows up every second or so
+    time.sleep(1)
