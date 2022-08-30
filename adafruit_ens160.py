@@ -15,8 +15,7 @@ Implementation Notes
 
 **Hardware:**
 
-.. todo:: Add links to any specific hardware product page(s), or category page(s).
-  Use unordered list & hyperlink rST inline format: "* `Link Text <url>`_"
+* `ScioSense ENS160 multi-gas sensor <http://www.adafruit.com/products/5606>`_
 
 **Software and Dependencies:**
 
@@ -105,7 +104,7 @@ class ENS160:
     interrupt_enable = RWBit(_ENS160_REG_CONFIG, 0)
 
     def __init__(self, i2c_bus: I2C, address: int = ENS160_I2CADDR_DEFAULT) -> None:
-        # pylint: disable=no-member
+
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
 
         self.reset()
