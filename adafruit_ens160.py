@@ -130,7 +130,7 @@ class ENS160:
         self.command = COMMAND_CLRGPR
         time.sleep(0.01)
 
-    def _read_GPR(self):
+    def _read_gpr(self):
         """Read 8 bytes of general purpose registers into self._buf"""
         self._buf[0] = _ENS160_REG_GPRREAD
         with self.i2c_device as i2c:
@@ -159,7 +159,7 @@ class ENS160:
             newdat = True
 
         if self._new_GPR_available:
-            self._read_GPR()
+            self._read_gpr()
             for i, x in enumerate(struct.unpack("<HHHH", self._buf)):
                 self._bufferdict["Resistances"][i] = int(pow(2, x / 2048.0))
             newdat = True
@@ -167,6 +167,7 @@ class ENS160:
         return newdat
 
     def read_all_sensors(self):
+        """All of the currently buffered sensor information"""
         # return the currently buffered deets
         return self._bufferdict
 
@@ -178,7 +179,7 @@ class ENS160:
         self.clear_command()
         time.sleep(0.01)
         self.command = COMMAND_GETAPPVER
-        self._read_GPR()
+        self._read_gpr()
         self.mode = curr_mode
         return "%d.%d.%d" % (self._buf[4], self._buf[5], self._buf[6])
 
