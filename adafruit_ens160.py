@@ -34,6 +34,13 @@ from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
 from adafruit_register.i2c_bit import RWBit, ROBit
 from adafruit_register.i2c_bits import ROBits
 
+try:
+    from typing import Dict, Optional, Union, List
+    from typing_extensions import Literal
+    from busio import I2C
+except ImportError:
+    pass
+
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_ENS160.git"
 
@@ -70,8 +77,9 @@ COMMAND_GETAPPVER = 0x0E
 
 class ENS160:
     """Driver for the ENS160 air quality sensor
+
     :param ~busio.I2C i2c_bus: The I2C bus the ENS160 is connected to.
-    :param address: The I2C device address. Defaults to :const:`0x53`
+    :param int address: The I2C device address. Defaults to :const:`0x53`
     """
 
     part_id = ROUnaryStruct(_ENS160_REG_PARTID, "<H")
@@ -96,7 +104,7 @@ class ENS160:
     interrupt_on_data = RWBit(_ENS160_REG_CONFIG, 1)
     interrupt_enable = RWBit(_ENS160_REG_CONFIG, 0)
 
-    def __init__(self, i2c_bus, address=ENS160_I2CADDR_DEFAULT):
+    def __init__(self, i2c_bus: I2C, address: int = ENS160_I2CADDR_DEFAULT) -> None:
         # pylint: disable=no-member
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
 
@@ -119,25 +127,25 @@ class ENS160:
         self.temperature_compensation = 25
         self.humidity_compensation = 50
 
-    def reset(self):
+    def reset(self) -> None:
         """Perform a soft reset command"""
         self.mode = MODE_RESET
         time.sleep(0.01)
 
-    def clear_command(self):
+    def clear_command(self) -> None:
         """Clears out custom data"""
         self.command = COMMAND_NOP
         self.command = COMMAND_CLRGPR
         time.sleep(0.01)
 
-    def _read_gpr(self):
+    def _read_gpr(self) -> None:
         """Read 8 bytes of general purpose registers into self._buf"""
         self._buf[0] = _ENS160_REG_GPRREAD
         with self.i2c_device as i2c:
             i2c.write_then_readinto(self._buf, self._buf, out_end=1)
 
     @property
-    def new_data_available(self):
+    def new_data_available(self) -> bool:
         """This function is wierd, it checks if there's new data or
         GPR (resistances) and if so immediately reads it into the
         internal buffer... otherwise the status is lost!"""
@@ -166,13 +174,13 @@ class ENS160:
 
         return newdat
 
-    def read_all_sensors(self):
+    def read_all_sensors(self) -> Dict[str, Optional[Union[int, List[int]]]]:
         """All of the currently buffered sensor information"""
         # return the currently buffered deets
         return self._bufferdict
 
     @property
-    def firmware_version(self):
+    def firmware_version(self) -> str:
         """Read the semver firmware version from the general registers"""
         curr_mode = self.mode
         self.mode = MODE_IDLE
@@ -184,34 +192,34 @@ class ENS160:
         return "%d.%d.%d" % (self._buf[4], self._buf[5], self._buf[6])
 
     @property
-    def mode(self):
-        """Operational Mode, can be MODE_SLEEP, MODE_IDLE, or MODE_STANDARD"""
+    def mode(self) -> Literal[0, 1, 2, 240]:
+        """Operational Mode, can be MODE_SLEEP, MODE_IDLE, MODE_STANDARD, or MODE_RESET"""
         return self._mode
 
     @mode.setter
-    def mode(self, newmode):
+    def mode(self, newmode: Literal[0, 1, 2, 240]) -> None:
         if not newmode in _valid_modes:
             raise RuntimeError(
-                "Invalid mode: must be MODE_SLEEP, MODE_IDLE, or MODE_STANDARD"
+                "Invalid mode: must be MODE_SLEEP, MODE_IDLE, MODE_STANDARD, or MODE_RESET"
             )
         self._mode = newmode
 
     @property
-    def temperature_compensation(self):
+    def temperature_compensation(self) -> float:
         """Temperature compensation setting, set this to ambient temperature
         to get best gas sensor readings, floating point degrees C"""
         return (self._temp_in / 64.0) - 273.15
 
     @temperature_compensation.setter
-    def temperature_compensation(self, temp_c):
+    def temperature_compensation(self, temp_c: float) -> None:
         self._temp_in = int((temp_c + 273.15) * 64.0 + 0.5)
 
     @property
-    def humidity_compensation(self):
+    def humidity_compensation(self) -> float:
         """Humidity compensation setting, set this to ambient relative
         humidity (percentage 0-100) to get best gas sensor readings"""
         return self._rh_in / 512.0
 
     @humidity_compensation.setter
-    def humidity_compensation(self, hum_perc):
+    def humidity_compensation(self, hum_perc: float) -> None:
         self._rh_in = int(hum_perc * 512 + 0.5)
