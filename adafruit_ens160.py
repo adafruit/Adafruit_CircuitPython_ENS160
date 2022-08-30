@@ -67,6 +67,7 @@ COMMAND_NOP = 0x00
 COMMAND_CLRGPR = 0xCC
 COMMAND_GETAPPVER = 0x0E
 
+
 class ENS160:
     """Driver for the ENS160 air quality sensor
     :param ~busio.I2C i2c_bus: The I2C bus the ENS160 is connected to.
@@ -108,8 +109,12 @@ class ENS160:
         self.mode = MODE_STANDARD
         self._buf = bytearray(8)
         # Buffered readings for when we read all at once
-        self._bufferdict = {'AQI': None, 'TVOC': None, 'eCO2' : None,
-                            'Resistances' : [None, None, None, None]}
+        self._bufferdict = {
+            "AQI": None,
+            "TVOC": None,
+            "eCO2": None,
+            "Resistances": [None, None, None, None],
+        }
         # Initialize with 'room temperature & humidity'
         self.temperature_compensation = 25
         self.humidity_compensation = 50
@@ -138,27 +143,33 @@ class ENS160:
         internal buffer... otherwise the status is lost!"""
         # we'll track if we actually read new data!
         newdat = False
-        
+
         if self._new_data_available:
             self._buf[0] = _ENS160_REG_AQI
             with self.i2c_device as i2c:
-                i2c.write_then_readinto(self._buf, self._buf,
-                                        out_end=1, in_end=5)
-            self._bufferdict['AQI'], self._bufferdict['TVOC'], self._bufferdict['eCO2'], _, _, _ = struct.unpack("<BHHBBB", self._buf)
+                i2c.write_then_readinto(self._buf, self._buf, out_end=1, in_end=5)
+            (
+                self._bufferdict["AQI"],
+                self._bufferdict["TVOC"],
+                self._bufferdict["eCO2"],
+                _,
+                _,
+                _,
+            ) = struct.unpack("<BHHBBB", self._buf)
             newdat = True
 
         if self._new_GPR_available:
             self._read_GPR()
-            for i,x in enumerate(struct.unpack("<HHHH", self._buf)):
-                self._bufferdict['Resistances'][i] = int(pow(2, x / 2048.0))
+            for i, x in enumerate(struct.unpack("<HHHH", self._buf)):
+                self._bufferdict["Resistances"][i] = int(pow(2, x / 2048.0))
             newdat = True
 
         return newdat
-        
+
     def read_all_sensors(self):
         # return the currently buffered deets
         return self._bufferdict
-            
+
     @property
     def firmware_version(self):
         """Read the semver firmware version from the general registers"""
@@ -169,8 +180,8 @@ class ENS160:
         self.command = COMMAND_GETAPPVER
         self._read_GPR()
         self.mode = curr_mode
-        return '%d.%d.%d' % (self._buf[4], self._buf[5], self._buf[6])
-         
+        return "%d.%d.%d" % (self._buf[4], self._buf[5], self._buf[6])
+
     @property
     def mode(self):
         """Operational Mode, can be MODE_SLEEP, MODE_IDLE, or MODE_STANDARD"""
@@ -179,9 +190,10 @@ class ENS160:
     @mode.setter
     def mode(self, newmode):
         if not newmode in _valid_modes:
-            raise RuntimeError("Invalid mode: must be MODE_SLEEP, MODE_IDLE, or MODE_STANDARD")
+            raise RuntimeError(
+                "Invalid mode: must be MODE_SLEEP, MODE_IDLE, or MODE_STANDARD"
+            )
         self._mode = newmode
-
 
     @property
     def temperature_compensation(self):
@@ -191,8 +203,8 @@ class ENS160:
 
     @temperature_compensation.setter
     def temperature_compensation(self, temp_c):
-        self._temp_in = int((temp_c +  273.15) * 64.0 + 0.5)
-    
+        self._temp_in = int((temp_c + 273.15) * 64.0 + 0.5)
+
     @property
     def humidity_compensation(self):
         """Humidity compensation setting, set this to ambient relative

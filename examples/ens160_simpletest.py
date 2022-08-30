@@ -22,6 +22,6 @@ while True:
     print("TVOC (ppb):", ens.TVOC)
     print("eCO2 (ppm):", ens.eCO2)
     print()
-    
+
     # new data shows up every second or so
     time.sleep(1)

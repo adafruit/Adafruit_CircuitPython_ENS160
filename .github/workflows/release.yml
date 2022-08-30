@@ -55,7 +55,7 @@ jobs:
       uses: csexton/release-asset-action@master
       with:
         pattern: "bundles/*"
-        github-token: ${{ secrets.GITHUB_TOKEN }} 
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
   upload-pypi:
     runs-on: ubuntu-latest

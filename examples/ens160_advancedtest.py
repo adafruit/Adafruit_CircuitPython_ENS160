@@ -13,7 +13,7 @@ print("Firmware Vers: ", ens.firmware_version)
 
 ens.mode = adafruit_ens160.MODE_STANDARD
 curr_mode = ens.mode
-print("Current mode: ", end='')
+print("Current mode: ", end="")
 if curr_mode == adafruit_ens160.MODE_SLEEP:
     print("Sleeping")
 if curr_mode == adafruit_ens160.MODE_IDLE:
@@ -31,17 +31,17 @@ print("Current rel humidity compensation = %0.1f %%" % ens.humidity_compensation
 print()
 
 # We can have the INT pin tell us when new data is available
-ens.interrupt_pushpull = True # use pushpull 3V, not open-drain
-ens.interrupt_on_data = True # Tell us when there's new calculated data
-ens.interrupt_polarity = False # Active 'low' (false)
-ens.interrupt_enable = True # enable pin
+ens.interrupt_pushpull = True  # use pushpull 3V, not open-drain
+ens.interrupt_on_data = True  # Tell us when there's new calculated data
+ens.interrupt_polarity = False  # Active 'low' (false)
+ens.interrupt_enable = True  # enable pin
 
 while True:
     # if no data, loop over
     if not ens.new_data_available:
         time.sleep(0.1)
         continue
-    
+
     # Check status
     status = ens.data_validity
     if status == adafruit_ens160.NORMAL_OP:
@@ -55,8 +55,8 @@ while True:
 
     # read all sensors at once and print out the structure
     data = ens.read_all_sensors()
-    print("AQI (1-5):", data['AQI'])
-    print("TVOC (ppb):", data['TVOC'])
-    print("eCO2 (ppm):", data['eCO2'])
-    print("Sensor resistances (ohms):", data['Resistances'])
+    print("AQI (1-5):", data["AQI"])
+    print("TVOC (ppb):", data["TVOC"])
+    print("eCO2 (ppm):", data["eCO2"])
+    print("Sensor resistances (ohms):", data["Resistances"])
     print()
