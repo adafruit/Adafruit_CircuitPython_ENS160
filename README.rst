@@ -84,7 +84,7 @@ following command to install:
 
 .. code-block:: shell
 
-    circup install ens160
+    circup install adafruit_ens160
 
 Or the following command to update an existing version:
 
