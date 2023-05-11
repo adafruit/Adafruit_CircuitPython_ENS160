@@ -104,7 +104,6 @@ class ENS160:
     interrupt_enable = RWBit(_ENS160_REG_CONFIG, 0)
 
     def __init__(self, i2c_bus: I2C, address: int = ENS160_I2CADDR_DEFAULT) -> None:
-
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
 
         self.reset()
