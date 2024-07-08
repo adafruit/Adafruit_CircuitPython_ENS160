@@ -106,11 +106,8 @@ class ENS160:
     def __init__(self, i2c_bus: I2C, address: int = ENS160_I2CADDR_DEFAULT) -> None:
         self.i2c_device = i2c_device.I2CDevice(i2c_bus, address)
 
-        self.reset()
-
         if self.part_id != 0x160:
             raise RuntimeError("Unable to find ENS160, check your wiring")
-        self.mode = MODE_IDLE
         self.clear_command()
         self.mode = MODE_STANDARD
         self._buf = bytearray(8)
