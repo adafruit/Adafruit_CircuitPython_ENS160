@@ -25,18 +25,20 @@ Implementation Notes
 * Adafruit's Register library: https://github.com/adafruit/Adafruit_CircuitPython_Register
 """
 
-import time
 import struct
-from micropython import const
+import time
+
 from adafruit_bus_device import i2c_device
-from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
-from adafruit_register.i2c_bit import RWBit, ROBit
+from adafruit_register.i2c_bit import ROBit, RWBit
 from adafruit_register.i2c_bits import ROBits
+from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
+from micropython import const
 
 try:
-    from typing import Dict, Optional, Union, List
-    from typing_extensions import Literal
+    from typing import Dict, List, Optional, Union
+
     from busio import I2C
+    from typing_extensions import Literal
 except ImportError:
     pass
 
