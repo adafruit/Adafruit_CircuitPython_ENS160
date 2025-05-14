@@ -5,12 +5,13 @@
 
 # Simple demo of the ENS160 air quality sensor using a built-in display.
 import time
+
 import board
 from adafruit_display_text.bitmap_label import Label
-from terminalio import FONT
 from displayio import Group
-import adafruit_ens160
+from terminalio import FONT
 
+import adafruit_ens160
 
 # create a main_group to hold anything we want to show on the display.
 main_group = Group()
@@ -41,8 +42,6 @@ board.DISPLAY.root_group = main_group
 # begin main loop
 while True:
     # Update the label.text property to change the text on the display
-    display_output_label.text = (
-        f"AQI:{ens.AQI} (1-5), TVOC:{ens.TVOC} ppb, eCO2:{ens.eCO2} ppm"
-    )
+    display_output_label.text = f"AQI:{ens.AQI} (1-5), TVOC:{ens.TVOC} ppb, eCO2:{ens.eCO2} ppm"
     # wait for a bit
     time.sleep(1.0)
