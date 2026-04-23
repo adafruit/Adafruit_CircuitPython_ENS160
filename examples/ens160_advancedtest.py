@@ -27,10 +27,10 @@ if curr_mode == adafruit_ens160.MODE_STANDARD:
 # Set the temperature compensation variable to the ambient temp
 # for best sensor calibration
 ens.temperature_compensation = 25
-print("Current temperature compensation = %0.1f *C" % ens.temperature_compensation)
+print(f"Current temperature compensation = {ens.temperature_compensation:.1f} *C")
 # Same for ambient relative humidity
 ens.humidity_compensation = 50
-print("Current rel humidity compensation = %0.1f %%" % ens.humidity_compensation)
+print(f"Current rel humidity compensation = {ens.humidity_compensation:.1f} %")
 print()
 
 # We can have the INT pin tell us when new data is available

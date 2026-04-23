@@ -186,7 +186,7 @@ class ENS160:
         self.command = COMMAND_GETAPPVER
         self._read_gpr()
         self.mode = curr_mode
-        return "%d.%d.%d" % (self._buf[4], self._buf[5], self._buf[6])
+        return f"{self._buf[4]}.{self._buf[5]}.{self._buf[6]}"
 
     @property
     def mode(self) -> Literal[0, 1, 2, 240]:
